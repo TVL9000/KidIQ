@@ -1,652 +1,199 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="default">
-  <meta name="apple-mobile-web-app-title" content="IQ Trainer">
-  <title>Kid IQ Trainer</title>
-  <style>
-    :root { font-family: -apple-system, system-ui, Arial, sans-serif; }
-    body { margin: 0; background: #0b1220; color: #eaf2ff; }
-    header { padding: 18px 16px 10px; }
-    h1 { margin: 0; font-size: 26px; }
-    .sub { opacity:.85; margin-top:6px; font-size: 14px; }
-    .wrap { padding: 12px 16px 24px; display: grid; gap: 12px; }
-    .card {
-      background: rgba(255,255,255,.08);
-      border: 1px solid rgba(255,255,255,.10);
-      border-radius: 16px;
-      padding: 14px;
-      backdrop-filter: blur(8px);
-    }
-    .row { display:flex; gap: 10px; flex-wrap: wrap; align-items: center; }
-    .pill {
-      padding: 6px 10px;
-      border-radius: 999px;
-      background: rgba(255,255,255,.10);
-      font-size: 12px;
-      opacity: .95;
-    }
-    button {
-      border: 0;
-      border-radius: 14px;
-      padding: 12px 14px;
-      font-weight: 700;
-      background: #4aa3ff;
-      color: #06101f;
-      width: 100%;
-      font-size: 16px;
-    }
-    button.secondary { background: rgba(255,255,255,.14); color: #eaf2ff; }
-    button:disabled { opacity: .45; }
-    .grid2 { display:grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-    .grid3 { display:grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
-    .big { font-size: 40px; font-weight: 900; letter-spacing: .5px; text-align:center; }
-    .center { text-align:center; }
-    input {
-      width: 100%;
-      padding: 12px 12px;
-      border-radius: 14px;
-      border: 1px solid rgba(255,255,255,.18);
-      background: rgba(0,0,0,.25);
-      color: #eaf2ff;
-      font-size: 16px;
-      outline: none;
-      box-sizing: border-box;
-    }
-    .barOuter { height: 10px; background: rgba(255,255,255,.10); border-radius: 999px; overflow:hidden; }
-    .barInner { height: 100%; width: 0%; background: #78ff9c; }
-    .msg { font-weight: 700; }
-    .small { font-size: 12px; opacity: .85; }
-    .danger { color: #ffd0d0; }
-    .hidden { display:none; }
-    .tileBtn {
-      background: rgba(255,255,255,.10);
-      color: #eaf2ff;
-      border: 1px solid rgba(255,255,255,.16);
-      border-radius: 16px;
-      padding: 14px 10px;
-      font-size: 18px;
-      font-weight: 800;
-    }
-    .emojiBtn { font-size: 42px; padding: 14px 10px; }
-  </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>IQ Trainer</title>
+
+<style>
+body { margin:0; font-family:-apple-system,system-ui; background:#0b1220; color:#eaf2ff }
+.wrap { padding:16px; display:grid; gap:12px }
+.card { background:rgba(255,255,255,.08); border-radius:16px; padding:14px }
+.row { display:flex; gap:8px; flex-wrap:wrap }
+.pill { background:rgba(255,255,255,.15); padding:6px 10px; border-radius:999px; font-size:12px }
+button { width:100%; padding:12px; border-radius:14px; border:0; font-weight:700 }
+.primary { background:#4aa3ff; color:#06101f }
+.secondary { background:rgba(255,255,255,.15); color:#fff }
+.hidden { display:none }
+.grid2 { display:grid; grid-template-columns:repeat(2,1fr); gap:8px }
+.grid3 { display:grid; grid-template-columns:repeat(3,1fr); gap:8px }
+.barOuter { height:8px; background:rgba(255,255,255,.15); border-radius:999px }
+.barInner { height:100%; background:#78ff9c }
+.big { font-size:32px; text-align:center; font-weight:900 }
+.msg { font-weight:700; text-align:center }
+.center { text-align:center }
+</style>
 </head>
+
 <body>
-<header>
-  <h1>Kid IQ Trainer</h1>
-  <div class="sub">Offline • No ads • No login • For kids</div>
-</header>
-
 <div class="wrap">
-  <div class="card">
-    <div class="row">
-      <div class="pill" id="bestPill">Best: 0</div>
-      <div class="pill" id="streakPill">Daily streak: 0</div>
-      <div class="pill" id="todayPill">Today: —</div>
-    </div>
-    <div style="height:10px"></div>
-    <button id="startBtn">Start Daily Session (5 min)</button>
-    <div style="height:8px"></div>
-    <button class="secondary" id="parentBtn">Parent Settings</button>
-    <div style="height:8px"></div>
-    <div class="small">Tip: Add to Home Screen from Safari Share menu.</div>
+
+<div class="card" id="homeCard">
+  <h2>🧠 IQ Trainer</h2>
+  <button class="primary" id="startBtn">Start Session</button>
+</div>
+
+<div class="card hidden" id="gameCard">
+  <div class="row">
+    <div class="pill" id="gameName"></div>
+    <div class="pill" id="roundPill"></div>
+    <div class="pill" id="difficultyPill"></div>
   </div>
+  <div style="height:10px"></div>
+  <div id="gameArea"></div>
+</div>
 
-  <div class="card hidden" id="sessionCard">
-    <div class="row">
-      <div class="pill" id="timePill">Time: 300s</div>
-      <div class="pill" id="pointsPill">Points: 0</div>
-      <div class="pill" id="runPill">Running</div>
-    </div>
-    <div style="height:10px"></div>
-    <div class="barOuter"><div class="barInner" id="bar"></div></div>
-    <div style="height:10px"></div>
-    <div class="msg center" id="msg">Let’s go!</div>
-    <div style="height:10px"></div>
+<div class="wrap hidden" id="summaryView"></div>
 
-    <div class="row">
-      <div class="pill" id="gamePill">Game: —</div>
-      <div class="pill" id="gameIndexPill">1/3</div>
-    </div>
-
-    <div style="height:10px"></div>
-    <div id="gameArea"></div>
-
-    <div style="height:12px"></div>
-    <div class="grid2">
-      <button class="secondary" id="pauseBtn">Pause</button>
-      <button class="secondary" id="skipBtn">Skip</button>
-    </div>
-    <div style="height:10px"></div>
-    <button class="secondary" id="endBtn">End Session</button>
-  </div>
-
-  <div class="card hidden" id="parentCard">
-    <div class="row"><div class="pill">Parent Gate</div></div>
-    <div style="height:10px"></div>
-    <div id="parentLocked">
-      <div class="center">Solve to unlock:</div>
-      <div class="big" id="parentQ">3 × 4</div>
-      <input id="parentInput" inputmode="numeric" placeholder="Answer" />
-      <div style="height:10px"></div>
-      <button id="unlockBtn">Unlock</button>
-      <div style="height:8px"></div>
-      <div class="small" id="parentMsg"></div>
-    </div>
-    <div id="parentUnlocked" class="hidden">
-      <div class="center">Unlocked ✅</div>
-      <div style="height:10px"></div>
-      <button id="resetBtn" class="secondary">Reset Progress (Best + Streak)</button>
-      <div style="height:8px"></div>
-      <button id="closeParentBtn" class="secondary">Close</button>
-      <div style="height:8px"></div>
-      <div class="small">Progress is stored only on this phone.</div>
-    </div>
-  </div>
 </div>
 
 <script>
-/* ---------- Storage ---------- */
-const store = {
-  get(key, def){ try{ return JSON.parse(localStorage.getItem(key)) ?? def } catch { return def } },
-  set(key, val){ localStorage.setItem(key, JSON.stringify(val)); }
+/* STORAGE */
+const store={get:(k,d)=>JSON.parse(localStorage.getItem(k))??d,set:(k,v)=>localStorage.setItem(k,JSON.stringify(v))};
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const getDiff=g=>store.get("diff_"+g,1);
+const setDiff=(g,l)=>store.set("diff_"+g,l);
+
+/* GAME META */
+const games=["pattern","math","memory","color","odd","speed"];
+const meta={
+pattern:{icon:"🧩",name:"Pattern Match"},
+math:{icon:"🔢",name:"Quick Math"},
+memory:{icon:"🧠",name:"Memory Flash"},
+color:{icon:"🟦",name:"Color Grid"},
+odd:{icon:"❓",name:"Odd One Out"},
+speed:{icon:"⚡",name:"Speed Tap"}
 };
 
-function todaySeed(d=new Date()){
-  const y=d.getFullYear(), m=String(d.getMonth()+1).padStart(2,'0'), day=String(d.getDate()).padStart(2,'0');
-  return parseInt(`${y}${m}${day}`,10);
+/* SESSION ENGINE */
+const Engine={
+cycle:1,cycles:3,gi:0,ri:0,rounds:[],results:{},
+start(){
+this.cycle=1;this.gi=0;this.ri=0;this.rounds=[];this.results={};
+games.forEach(g=>this.results[g]={start:getDiff(g),scores:[],end:getDiff(g)});
+homeCard.classList.add("hidden");gameCard.classList.remove("hidden");
+this.startRound();
+},
+startRound(){
+const g=games[this.gi];
+gameName.textContent=meta[g].icon+" "+meta[g].name;
+roundPill.textContent=`Round ${this.ri+1}/3 • Cycle ${this.cycle}/3`;
+difficultyPill.textContent=`Level ${getDiff(g)}`;
+Game.render(g,getDiff(g));
+},
+record(score){
+this.rounds.push(score);this.ri++;
+this.ri===3?this.finishBlock():this.startRound();
+},
+finishBlock(){
+const g=games[this.gi];
+const avg=this.rounds.reduce((a,b)=>a+b,0)/3;
+this.results[g].scores.push(Math.round(avg));
+let l=getDiff(g);
+if(avg>=80)l++;else if(avg<=40)l--;
+l=clamp(l,1,4);setDiff(g,l);this.results[g].end=l;
+this.rounds=[];this.ri=0;this.gi++;
+this.gi===games.length?this.finishCycle():this.startRound();
+},
+finishCycle(){
+this.gi=0;
+this.cycle<this.cycles?(this.cycle++,this.startRound()):this.finishSession();
+},
+finishSession(){
+gameCard.classList.add("hidden");renderSummary(this.results);
 }
-function seedShuffle(arr, seed){
-  // deterministic shuffle
-  let a = arr.slice();
-  let s = seed >>> 0;
-  function rnd(){ s = (s*1664525 + 1013904223) >>> 0; return s/4294967296; }
-  for(let i=a.length-1;i>0;i--){
-    const j = Math.floor(rnd()*(i+1));
-    [a[i],a[j]]=[a[j],a[i]];
-  }
-  return a;
-}
-
-const allGames = ["pattern","math","memory","odd","speed"];
-const gameMeta = {
-  pattern:{ title:"Pattern Match" },
-  math:{ title:"Quick Math" },
-  memory:{ title:"Memory Flash" },
-  odd:{ title:"Odd One Out" },
-  speed:{ title:"Speed Tap" }
 };
 
-function todaysGames(){
-  const seed = todaySeed();
-  return seedShuffle(allGames, seed).slice(0,5);
+/* GAME ROUTER */
+const Game={render(t,l){
+({pattern,math,memory,color,odd,speed}[t])(l);
+}};
+
+/* GAME IMPLEMENTATIONS */
+
+/* Pattern Match */
+function pattern(l){
+const shapes=["▲","■","●","◆"];
+const a=shapes[Math.floor(Math.random()*shapes.length)];
+const b=shapes.find(x=>x!==a);
+const ans=l>1?b:a;
+const opts=[a,b].sort(()=>Math.random()-.5);
+gameArea.innerHTML=`<div class="big">${a} → ?</div><div class="grid2">${opts.map(o=>`<button class="secondary">${o}</button>`).join("")}</div>`;
+[...gameArea.querySelectorAll("button")].forEach(b=>b.onclick=()=>Engine.record(b.textContent===ans?100:0));
 }
 
-/* ---------- UI refs ---------- */
-const bestPill = document.getElementById("bestPill");
-const streakPill = document.getElementById("streakPill");
-const todayPill = document.getElementById("todayPill");
-const startBtn = document.getElementById("startBtn");
-const parentBtn = document.getElementById("parentBtn");
-
-const sessionCard = document.getElementById("sessionCard");
-const timePill = document.getElementById("timePill");
-const pointsPill = document.getElementById("pointsPill");
-const runPill = document.getElementById("runPill");
-const bar = document.getElementById("bar");
-const msg = document.getElementById("msg");
-const gamePill = document.getElementById("gamePill");
-const gameIndexPill = document.getElementById("gameIndexPill");
-const gameArea = document.getElementById("gameArea");
-const pauseBtn = document.getElementById("pauseBtn");
-const skipBtn = document.getElementById("skipBtn");
-const endBtn = document.getElementById("endBtn");
-
-const parentCard = document.getElementById("parentCard");
-const parentLocked = document.getElementById("parentLocked");
-const parentUnlocked = document.getElementById("parentUnlocked");
-const parentQ = document.getElementById("parentQ");
-const parentInput = document.getElementById("parentInput");
-const unlockBtn = document.getElementById("unlockBtn");
-const parentMsg = document.getElementById("parentMsg");
-const resetBtn = document.getElementById("resetBtn");
-const closeParentBtn = document.getElementById("closeParentBtn");
-
-/* ---------- Progress + streak ---------- */
-function updateHomeStats(){
-  const best = store.get("bestScore",0);
-  const streak = store.get("dailyStreak",0);
-  bestPill.textContent = `Best: ${best}`;
-  streakPill.textContent = `Daily streak: ${streak}`;
-  todayPill.textContent = `Today: ${todaysGames().map(g=>gameMeta[g].title).join(" • ")}`;
+/* Quick Math */
+function math(l){
+const a=Math.floor(Math.random()*20)+1,b=Math.floor(Math.random()*20)+1;
+const ans=a+b;
+const opts=[ans,ans+1,ans-1].sort(()=>Math.random()-.5);
+gameArea.innerHTML=`<div class="big">${a}+${b}</div><div class="grid3">${opts.map(o=>`<button class="secondary">${o}</button>`).join("")}</div>`;
+[...gameArea.querySelectorAll("button")].forEach(b=>b.onclick=()=>Engine.record(+b.textContent===ans?100:0));
 }
 
-/* ---------- Session VM ---------- */
-const Session = {
-  duration: 300,
-  timeLeft: 300,
-  running: false,
-  points: 0,
-  streak: 0,
-  games: [],
-  idx: 0,
-  timerId: null,
-
-  start(){
-    // update daily streak once per day
-    const today = todaySeed();
-    const last = store.get("lastPlayedDaySeed",0);
-    if(last !== today){
-      const yesterday = new Date(); yesterday.setDate(yesterday.getDate()-1);
-      const ySeed = todaySeed(yesterday);
-      if(last === ySeed) store.set("dailyStreak", (store.get("dailyStreak",0)+1));
-      else store.set("dailyStreak", 1);
-      store.set("lastPlayedDaySeed", today);
-    }
-
-    this.timeLeft = this.duration;
-    this.running = true;
-    this.points = 0;
-    this.streak = 0;
-    this.games = todaysGames();
-    this.idx = 0;
-
-    sessionCard.classList.remove("hidden");
-    msg.textContent = "Go! You’ve got this 💪";
-    runPill.textContent = "Running";
-    pauseBtn.textContent = "Pause";
-
-    this.render();
-    this.tickStart();
-    updateHomeStats();
-  },
-
-  tickStart(){
-    if(this.timerId) clearInterval(this.timerId);
-    this.timerId = setInterval(()=>{
-      if(!this.running) return;
-      this.timeLeft -= 1;
-      if(this.timeLeft <= 0){
-        this.finish();
-      } else {
-        this.renderHeader();
-      }
-    }, 1000);
-  },
-
-  pause(){
-    this.running = false;
-    runPill.textContent = "Paused";
-    msg.textContent = "Paused. Tap Resume.";
-    pauseBtn.textContent = "Resume";
-    this.renderGameDisabled(true);
-  },
-
-  resume(){
-    this.running = true;
-    runPill.textContent = "Running";
-    msg.textContent = "Back to it!";
-    pauseBtn.textContent = "Pause";
-    this.renderGameDisabled(false);
-  },
-
-  skip(){
-    if(!this.running) return;
-    this.idx = (this.idx + 1) % this.games.length;
-    this.render();
-  },
-
-  correct(){
-    if(!this.running) return;
-    this.points += 10;
-    this.streak += 1;
-    if(this.streak >= 6) msg.textContent = "🔥 Amazing streak!";
-    else if(this.streak >= 3) msg.textContent = "⭐ Great job!";
-    else msg.textContent = "Good!";
-    this.advance();
-  },
-
-  wrong(){
-    if(!this.running) return;
-    this.streak = 0;
-    msg.textContent = "Nice try — keep going!";
-    // stay on same game; just re-roll that game’s round
-    this.render(true);
-  },
-
-  advance(){
-    this.idx = (this.idx + 1) % this.games.length;
-    this.render();
-  },
-
-  finish(){
-    this.running = false;
-    this.timeLeft = 0;
-    runPill.textContent = "Finished";
-    msg.textContent = "Nice work! ⭐️";
-
-    const best = store.get("bestScore",0);
-    if(this.points > best) store.set("bestScore", this.points);
-
-    updateHomeStats();
-    this.renderHeader();
-    this.renderGameDisabled(true);
-    if(this.timerId) clearInterval(this.timerId);
-    this.timerId = null;
-  },
-
-  render(forceRecreate=false){
-    this.renderHeader();
-    const g = this.games[this.idx];
-    gamePill.textContent = `Game: ${gameMeta[g].title}`;
-    gameIndexPill.textContent = `${this.idx+1}/${this.games.length}`;
-    if(forceRecreate) gameArea.innerHTML = "";
-    Game.render(g);
-    this.renderGameDisabled(!this.running);
-  },
-
-  renderHeader(){
-    timePill.textContent = `Time: ${this.timeLeft}s`;
-    pointsPill.textContent = `Points: ${this.points}`;
-    const pct = ((this.duration - this.timeLeft)/this.duration)*100;
-    bar.style.width = `${Math.max(0, Math.min(100, pct))}%`;
-  },
-
-  renderGameDisabled(disabled){
-    // disable all buttons inside game area
-    gameArea.querySelectorAll("button, input").forEach(el=>{
-      el.disabled = disabled;
-      el.style.opacity = disabled ? "0.6" : "1";
-    });
-  }
+/* Memory Flash */
+function memory(l){
+const emojis=["🐶","🐱","🦊","🐼","🦁"];
+const len=1+l;
+const seq=[...Array(len)].map(()=>emojis[Math.floor(Math.random()*emojis.length)]);
+gameArea.innerHTML=`<div class="big">${seq.join(" ")}</div><button class="primary">Ready</button>`;
+gameArea.querySelector("button").onclick=()=>{
+const ans=seq[Math.floor(Math.random()*seq.length)];
+const opts=[ans,...emojis.filter(e=>e!==ans)].slice(0,4).sort(()=>Math.random()-.5);
+gameArea.innerHTML=`<div class="msg">Which was shown?</div><div class="grid2">${opts.map(o=>`<button class="secondary">${o}</button>`).join("")}</div>`;
+[...gameArea.querySelectorAll("button")].forEach(b=>b.onclick=()=>Engine.record(b.textContent===ans?100:0));
 };
-
-/* ---------- Games ---------- */
-const Game = {
-  render(type){
-    switch(type){
-      case "pattern": return this.pattern();
-      case "math": return this.math();
-      case "memory": return this.memory();
-      case "odd": return this.odd();
-      case "speed": return this.speed();
-    }
-  },
-
-  // Pattern Match (2x2 missing bottom-right)
-  pattern(){
-    gameArea.innerHTML = "";
-    const shapes = ["▲","●","■","◆","★"];
-    const left = shapes[Math.floor(Math.random()*shapes.length)];
-    let right = shapes[Math.floor(Math.random()*shapes.length)];
-    while(right===left) right = shapes[Math.floor(Math.random()*shapes.length)];
-
-    const base = 1 + Math.floor(Math.random()*8);
-    const step = 1 + Math.floor(Math.random()*3);
-
-    const A = {s:left, v:base};
-    const B = {s:right, v:base+step};
-    const C = {s:left, v:base+step};
-    const ans = {s:right, v:base+2*step};
-
-    // create 6 choices
-    const set = new Map();
-    function key(t){ return t.s+"_"+t.v; }
-    set.set(key(ans), ans);
-    while(set.size < 6){
-      const s = Math.random() < .5 ? left : right;
-      const v = Math.max(1, base + (Math.floor(Math.random()*10)-2));
-      set.set(key({s,v}), {s,v});
-    }
-    const choices = Array.from(set.values()).sort(()=>Math.random()-0.5);
-
-    const matrix = document.createElement("div");
-    matrix.className = "card";
-    matrix.innerHTML = `
-      <div class="center small">Pick the missing tile</div>
-      <div style="height:10px"></div>
-      <div class="grid2">
-        <div class="card center"><div class="big">${A.s}</div><div class="small">${A.v}</div></div>
-        <div class="card center"><div class="big">${B.s}</div><div class="small">${B.v}</div></div>
-      </div>
-      <div style="height:10px"></div>
-      <div class="grid2">
-        <div class="card center"><div class="big">${C.s}</div><div class="small">${C.v}</div></div>
-        <div class="card center"><div class="big">?</div><div class="small">Missing</div></div>
-      </div>
-      <div style="height:12px"></div>
-      <div class="center"><b>Choices</b></div>
-      <div style="height:10px"></div>
-      <div class="grid3" id="choices"></div>
-    `;
-    gameArea.appendChild(matrix);
-    const choicesDiv = matrix.querySelector("#choices");
-
-    choices.forEach(ch=>{
-      const btn = document.createElement("button");
-      btn.className = "tileBtn";
-      btn.innerHTML = `${ch.s} <span style="opacity:.8"> ${ch.v}</span>`;
-      btn.onclick = ()=>{
-        if(ch.s===ans.s && ch.v===ans.v) Session.correct();
-        else Session.wrong();
-      };
-      choicesDiv.appendChild(btn);
-    });
-  },
-
-  // Quick Math
-  math(){
-    gameArea.innerHTML = "";
-    const ops = ["+","-","×"];
-    const op = ops[Math.floor(Math.random()*ops.length)];
-    let prompt = "", answer = 0;
-
-    if(op === "+"){
-      const a = 5 + Math.floor(Math.random()*36);
-      const b = 5 + Math.floor(Math.random()*36);
-      prompt = `${a} + ${b}`; answer = a+b;
-    } else if(op === "-"){
-      const a = 10 + Math.floor(Math.random()*51);
-      const b = 5 + Math.floor(Math.random()*46);
-      const hi = Math.max(a,b), lo = Math.min(a,b);
-      prompt = `${hi} − ${lo}`; answer = hi-lo;
-    } else {
-      const a = 2 + Math.floor(Math.random()*11);
-      const b = 2 + Math.floor(Math.random()*11);
-      prompt = `${a} × ${b}`; answer = a*b;
-    }
-
-    const box = document.createElement("div");
-    box.className = "card";
-    box.innerHTML = `
-      <div class="center small">Solve it!</div>
-      <div style="height:8px"></div>
-      <div class="big">${prompt}</div>
-      <div style="height:10px"></div>
-      <input id="mathInput" inputmode="numeric" placeholder="Answer" />
-      <div style="height:10px"></div>
-      <button id="mathSubmit">Submit</button>
-    `;
-    gameArea.appendChild(box);
-
-    const input = box.querySelector("#mathInput");
-    const submit = box.querySelector("#mathSubmit");
-
-    submit.onclick = ()=>{
-      const val = parseInt((input.value||"").trim(), 10);
-      if(val === answer) Session.correct();
-      else Session.wrong();
-    };
-    input.addEventListener("keydown",(e)=>{
-      if(e.key==="Enter") submit.click();
-    });
-  },
-
-  // Memory Flash (show 2-3 emojis, ask which was in it)
-  memory(){
-    gameArea.innerHTML = "";
-    const symbols = ["🐶","🐱","🦊","🐻","🐼","🦁","🐸","🐵"];
-    const len = 2 + Math.floor(Math.random()*2); // 2-3
-    const seq = Array.from({length:len},()=>symbols[Math.floor(Math.random()*symbols.length)]);
-    const answer = seq[Math.floor(Math.random()*seq.length)];
-
-    const box = document.createElement("div");
-    box.className = "card";
-    box.innerHTML = `
-      <div class="center small" id="memTitle">Memorize!</div>
-      <div style="height:10px"></div>
-      <div class="center" id="seq" style="font-size:44px">${seq.join(" ")}</div>
-      <div style="height:10px"></div>
-      <button id="readyBtn">I’m Ready</button>
-      <div id="choicesBox" class="hidden">
-        <div style="height:12px"></div>
-        <div class="center"><b>Which one was in the sequence?</b></div>
-        <div style="height:10px"></div>
-        <div class="grid2" id="memChoices"></div>
-      </div>
-    `;
-    gameArea.appendChild(box);
-
-    const readyBtn = box.querySelector("#readyBtn");
-    const choicesBox = box.querySelector("#choicesBox");
-    const memTitle = box.querySelector("#memTitle");
-    const seqDiv = box.querySelector("#seq");
-    const memChoices = box.querySelector("#memChoices");
-
-    readyBtn.onclick = ()=>{
-      memTitle.textContent = "Choose one!";
-      seqDiv.textContent = "🙂🙂🙂";
-      readyBtn.classList.add("hidden");
-      choicesBox.classList.remove("hidden");
-
-      const set = new Set([answer]);
-      while(set.size < 4) set.add(symbols[Math.floor(Math.random()*symbols.length)]);
-      const choices = Array.from(set).sort(()=>Math.random()-0.5);
-
-      memChoices.innerHTML = "";
-      choices.forEach(c=>{
-        const btn = document.createElement("button");
-        btn.className = "tileBtn emojiBtn";
-        btn.textContent = c;
-        btn.onclick = ()=> (c===answer ? Session.correct() : Session.wrong());
-        memChoices.appendChild(btn);
-      });
-    };
-  },
-
-  // Odd One Out
-  odd(){
-    gameArea.innerHTML = "";
-    const packs = [
-      ["🍎","🍌","🍓","🚗"],
-      ["🐶","🐱","🐭","🍕"],
-      ["⚽️","🏀","🎾","🧁"],
-      ["🌧️","☀️","❄️","🎸"],
-      ["🦁","🐯","🐸","👟"]
-    ];
-    const pack = packs[Math.floor(Math.random()*packs.length)];
-    const odd = pack[Math.floor(Math.random()*pack.length)];
-    const items = pack.slice().sort(()=>Math.random()-0.5);
-
-    const box = document.createElement("div");
-    box.className = "card";
-    box.innerHTML = `
-      <div class="center small">Tap the one that doesn’t belong</div>
-      <div style="height:12px"></div>
-      <div class="grid2" id="oddGrid"></div>
-    `;
-    gameArea.appendChild(box);
-    const grid = box.querySelector("#oddGrid");
-
-    items.forEach(it=>{
-      const btn = document.createElement("button");
-      btn.className = "tileBtn emojiBtn";
-      btn.textContent = it;
-      btn.onclick = ()=> (it===odd ? Session.correct() : Session.wrong());
-      grid.appendChild(btn);
-    });
-  },
-
-  // Speed Tap (tap the target color)
-  speed(){
-    gameArea.innerHTML = "";
-    const symbols = ["🟦","🟥","🟩","🟨","🟪","🟧"];
-    const target = symbols[Math.floor(Math.random()*symbols.length)];
-    const set = new Set([target]);
-    while(set.size < 6) set.add(symbols[Math.floor(Math.random()*symbols.length)]);
-    const opts = Array.from(set).sort(()=>Math.random()-0.5);
-
-    const box = document.createElement("div");
-    box.className = "card";
-    box.innerHTML = `
-      <div class="center small">Tap:</div>
-      <div class="big">${target}</div>
-      <div style="height:12px"></div>
-      <div class="grid3" id="speedGrid"></div>
-    `;
-    gameArea.appendChild(box);
-    const grid = box.querySelector("#speedGrid");
-
-    opts.forEach(o=>{
-      const btn = document.createElement("button");
-      btn.className = "tileBtn emojiBtn";
-      btn.textContent = o;
-      btn.onclick = ()=> (o===target ? Session.correct() : Session.wrong());
-      grid.appendChild(btn);
-    });
-  }
-};
-
-/* ---------- Parent gate ---------- */
-let parentA=0, parentB=0;
-function newParentQ(){
-  parentA = 3 + Math.floor(Math.random()*7);
-  parentB = 3 + Math.floor(Math.random()*7);
-  parentQ.textContent = `${parentA} × ${parentB}`;
-  parentInput.value = "";
-  parentMsg.textContent = "";
-}
-function openParent(){
-  parentCard.classList.remove("hidden");
-  parentLocked.classList.remove("hidden");
-  parentUnlocked.classList.add("hidden");
-  newParentQ();
-}
-function closeParent(){
-  parentCard.classList.add("hidden");
 }
 
-/* ---------- Buttons ---------- */
-startBtn.onclick = ()=> Session.start();
-pauseBtn.onclick = ()=> Session.running ? Session.pause() : Session.resume();
-skipBtn.onclick = ()=> Session.skip();
-endBtn.onclick = ()=> Session.finish();
+/* Color Grid */
+function color(l){
+const size=2+l;
+const tiles=l+2;
+const cells=[...Array(size*size)].map((_,i)=>i);
+cells.sort(()=>Math.random()-.5);
+const targets=cells.slice(0,tiles);
+gameArea.innerHTML=`<div class="grid3">${cells.map(i=>`<div class="card center" style="height:40px;background:${targets.includes(i)?"#4aa3ff":"rgba(255,255,255,.1)"}"></div>`).join("")}</div>`;
+setTimeout(()=>{
+let chosen=[];
+gameArea.innerHTML=`<div class="grid3">${cells.map(i=>`<button class="secondary" style="height:40px"></button>`).join("")}</div>`;
+[...gameArea.querySelectorAll("button")].forEach((b,i)=>b.onclick=()=>{
+chosen.push(i);b.style.background="#4aa3ff";
+if(chosen.length===targets.length){
+Engine.record(chosen.every(x=>targets.includes(x))?100:0);
+}
+});
+},1200);
+}
 
-parentBtn.onclick = ()=> openParent();
-unlockBtn.onclick = ()=>{
-  const ans = parseInt((parentInput.value||"").trim(),10);
-  if(ans === parentA*parentB){
-    parentLocked.classList.add("hidden");
-    parentUnlocked.classList.remove("hidden");
-  } else {
-    parentMsg.textContent = "Not quite — try again.";
-    newParentQ();
-  }
-};
-resetBtn.onclick = ()=>{
-  store.set("bestScore",0);
-  store.set("dailyStreak",0);
-  store.set("lastPlayedDaySeed",0);
-  updateHomeStats();
-  parentMsg.textContent = "";
-};
-closeParentBtn.onclick = ()=> closeParent();
+/* Odd One Out */
+function odd(l){
+const sets=[["🍎","🍌","🍓","🚗"],["🐶","🐱","🐭","🍕"]];
+const pack=sets[Math.floor(Math.random()*sets.length)];
+const odd=pack.find(e=>!/[🍎🍌🍓🐶🐱🐭]/.test(e));
+gameArea.innerHTML=`<div class="grid2">${pack.sort(()=>Math.random()-.5).map(o=>`<button class="secondary">${o}</button>`).join("")}</div>`;
+[...gameArea.querySelectorAll("button")].forEach(b=>b.onclick=()=>Engine.record(b.textContent===odd?100:0));
+}
 
-/* ---------- Init ---------- */
-updateHomeStats();
+/* Speed Tap */
+function speed(l){
+const syms=["🟥","🟦","🟩","🟨"];
+const t=syms[Math.floor(Math.random()*syms.length)];
+gameArea.innerHTML=`<div class="msg">Tap ${t}</div><div class="grid2">${syms.sort(()=>Math.random()-.5).map(o=>`<button class="secondary">${o}</button>`).join("")}</div>`;
+[...gameArea.querySelectorAll("button")].forEach(b=>b.onclick=()=>Engine.record(b.textContent===t?100:0));
+}
+
+/* SUMMARY */
+function renderSummary(r){
+const v=summaryView;v.innerHTML="";v.classList.remove("hidden");
+v.innerHTML+=`<div class="card"><h2>⭐ Session Complete</h2></div>`;
+Object.keys(r).forEach(g=>{
+v.innerHTML+=`<div class="card"><div class="row"><div class="pill">${meta[g].icon} ${meta[g].name}</div><div class="pill">${r[g].start} → ${r[g].end}</div></div><div class="grid3">${r[g].scores.map(s=>`<div class="barOuter"><div class="barInner" style="width:${s}%"></div></div>`).join("")}</div></div>`;
+});
+v.innerHTML+=`<div class="card"><button class="primary" onclick="location.reload()">New Session</button></div>`;
+}
+
+/* START */
+startBtn.onclick=()=>Engine.start();
 </script>
 </body>
 </html>
