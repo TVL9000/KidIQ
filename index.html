@@ -248,41 +248,89 @@ function memory(level){
 
 /* Color Grid – FIXED RANDOMNESS */
 function color(level){
-  const size=level+2;
-  const tiles=level+2;
-  const total=size*size;
-  const positions=[...Array(total).keys()];
-  const shuffled=[...positions].sort(()=>Math.random()-.5);
-  const targets=shuffled.slice(0,tiles);
+  const size = level + 2;          // Level 1 = 3x3
+  const tiles = level + 2;         // number of targets
+  const total = size * size;
 
-  gameArea.innerHTML=`
+  /* ---- DISPERSION CONTROL ----
+     Lower levels = clustered
+     Higher levels = spread out
+  */
+  const dispersionRadius = level === 1 ? 1 : level === 2 ? 2 : size;
+
+  const positions = [...Array(total).keys()];
+
+  // Pick first target
+  const first = positions[Math.floor(Math.random() * positions.length)];
+  const targets = [first];
+
+  // Pick remaining targets based on dispersion
+  while (targets.length < tiles) {
+    const candidate = positions[Math.floor(Math.random() * positions.length)];
+    const ok = targets.every(t => {
+      const dx = Math.abs((t % size) - (candidate % size));
+      const dy = Math.abs(Math.floor(t / size) - Math.floor(candidate / size));
+      return dx + dy >= dispersionRadius;
+    });
+    if (ok && !targets.includes(candidate)) targets.push(candidate);
+  }
+
+  // Render grid ONCE
+  gameArea.innerHTML = `
     <div class="grid${size}">
       ${positions.map(i=>`
-        <div class="card" style="height:40px;background:${targets.includes(i)?"#4aa3ff":"rgba(255,255,255,.1)"}"></div>
+        <button
+          class="secondary color-tile blank"
+          data-index="${i}"
+          style="height:42px">
+        </button>
       `).join("")}
     </div>
   `;
 
+  const tilesEls = [...gameArea.querySelectorAll(".color-tile")];
+
+  /* ---- SHOW PHASE ---- */
+  tilesEls.forEach(btn=>{
+    if (targets.includes(+btn.dataset.index)) {
+      btn.classList.add("reveal");
+    }
+  });
+
+  /* ---- FLIP PHASE ---- */
   setTimeout(()=>{
-    let chosen=[];
-    gameArea.innerHTML=`
-      <div class="grid${size}">
-        ${positions.map(i=>`<button class="secondary" style="height:40px"></button>`).join("")}
-      </div>
-    `;
-    [...gameArea.querySelectorAll("button")].forEach((b,i)=>{
-      b.onclick=()=>{
-        if(chosen.includes(i)) return;
-        chosen.push(i);
-        b.style.background="#4aa3ff";
-        if(chosen.length===tiles){
-          const ok=chosen.every(x=>targets.includes(x))&&targets.every(x=>chosen.includes(x));
-          Engine.record(ok?100:0);
+    tilesEls.forEach(btn=>{
+      btn.classList.remove("reveal");
+      btn.classList.add("blank");
+    });
+
+    let chosen = [];
+
+    tilesEls.forEach(btn=>{
+      btn.onclick = ()=>{
+        const idx = +btn.dataset.index;
+        if (chosen.includes(idx)) return;
+
+        chosen.push(idx);
+        btn.classList.remove("blank");
+
+        if (targets.includes(idx)) {
+          btn.classList.add("correct");
+        } else {
+          btn.classList.add("wrong");
+        }
+
+        /* ---- SCORING (PARTIAL CREDIT) ---- */
+        if (chosen.length === tiles) {
+          const correctCount = chosen.filter(i => targets.includes(i)).length;
+          const score = Math.round((correctCount / tiles) * 100);
+
+          // brief feedback delay
+          setTimeout(() => Engine.record(score), 400);
         }
       };
     });
-  },1200);
-}
+  },
 
 /* Odd One Out */
 function odd(){
