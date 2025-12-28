@@ -112,14 +112,48 @@ const Game={render(t,l){
 /* GAME IMPLEMENTATIONS */
 
 /* Pattern Match */
-function pattern(l){
-const shapes=["▲","■","●","◆"];
-const a=shapes[Math.floor(Math.random()*shapes.length)];
-const b=shapes.find(x=>x!==a);
-const ans=l>1?b:a;
-const opts=[a,b].sort(()=>Math.random()-.5);
-gameArea.innerHTML=`<div class="big">${a} → ?</div><div class="grid2">${opts.map(o=>`<button class="secondary">${o}</button>`).join("")}</div>`;
-[...gameArea.querySelectorAll("button")].forEach(b=>b.onclick=()=>Engine.record(b.textContent===ans?100:0));
+
+function pattern(level){
+  const shapes = ["▲","■","●","◆","★"];
+  const gridSize = level >= 3 ? 3 : 2;
+  const total = gridSize * gridSize;
+
+  // Pick two alternating shapes
+  const s1 = shapes[Math.floor(Math.random()*shapes.length)];
+  let s2 = shapes[Math.floor(Math.random()*shapes.length)];
+  while(s2 === s1) s2 = shapes[Math.floor(Math.random()*shapes.length)];
+
+  // Build pattern (alternating)
+  const pattern = [];
+  for(let i=0;i<total;i++){
+    pattern.push(i % 2 === 0 ? s1 : s2);
+  }
+
+  // Hide last cell
+  const answer = pattern[total-1];
+  pattern[total-1] = "❓";
+
+  // Create choices
+  const choices = [answer];
+  while(choices.length < 4){
+    const s = shapes[Math.floor(Math.random()*shapes.length)];
+    if(!choices.includes(s)) choices.push(s);
+  }
+  choices.sort(()=>Math.random()-.5);
+
+  gameArea.innerHTML = `
+    <div class="grid${gridSize}">
+      ${pattern.map(p=>`<div class="card center big">${p}</div>`).join("")}
+    </div>
+    <div style="height:12px"></div>
+    <div class="grid2">
+      ${choices.map(c=>`<button class="secondary big">${c}</button>`).join("")}
+    </div>
+  `;
+
+  [...gameArea.querySelectorAll("button")].forEach(b=>{
+    b.onclick = ()=>Engine.record(b.textContent === answer ? 100 : 0);
+  });
 }
 
 /* Quick Math */
@@ -146,25 +180,60 @@ gameArea.innerHTML=`<div class="msg">Which was shown?</div><div class="grid2">${
 }
 
 /* Color Grid */
-function color(l){
-const size=2+l;
-const tiles=l+2;
-const cells=[...Array(size*size)].map((_,i)=>i);
-cells.sort(()=>Math.random()-.5);
-const targets=cells.slice(0,tiles);
-gameArea.innerHTML=`<div class="grid3">${cells.map(i=>`<div class="card center" style="height:40px;background:${targets.includes(i)?"#4aa3ff":"rgba(255,255,255,.1)"}"></div>`).join("")}</div>`;
-setTimeout(()=>{
-let chosen=[];
-gameArea.innerHTML=`<div class="grid3">${cells.map(i=>`<button class="secondary" style="height:40px"></button>`).join("")}</div>`;
-[...gameArea.querySelectorAll("button")].forEach((b,i)=>b.onclick=()=>{
-chosen.push(i);b.style.background="#4aa3ff";
-if(chosen.length===targets.length){
-Engine.record(chosen.every(x=>targets.includes(x))?100:0);
-}
-});
-},1200);
-}
 
+function color(level){
+  const size = level + 2;       // 3×3 at level 1
+  const tiles = level + 2;
+  const total = size * size;
+
+  // Fixed grid positions
+  const positions = [...Array(total).keys()];
+
+  // Randomly choose target positions
+  const shuffled = [...positions].sort(()=>Math.random() - 0.5);
+  const targets = shuffled.slice(0, tiles);
+
+  // Show grid
+  gameArea.innerHTML = `
+    <div class="grid${size}">
+      ${positions.map(i=>`
+        <div class="card center"
+             style="height:42px;
+             background:${targets.includes(i) ? "#4aa3ff" : "rgba(255,255,255,.1)"}">
+        </div>`).join("")}
+    </div>
+  `;
+
+  // Hide after delay
+  setTimeout(()=>{
+    let chosen = [];
+
+    gameArea.innerHTML = `
+      <div class="grid${size}">
+        ${positions.map(i=>`
+          <button class="secondary" style="height:42px"></button>
+        `).join("")}
+      </div>
+    `;
+
+    [...gameArea.querySelectorAll("button")].forEach((b,i)=>{
+      b.onclick = ()=>{
+        if(chosen.includes(i)) return;
+        chosen.push(i);
+        b.style.background="#4aa3ff";
+
+        if(chosen.length === tiles){
+          const correct =
+            chosen.every(x=>targets.includes(x)) &&
+            targets.every(x=>chosen.includes(x));
+          Engine.record(correct ? 100 : 0);
+        }
+      };
+    });
+
+  }, 1200);
+}
+  
 /* Odd One Out */
 function odd(l){
 const sets=[["🍎","🍌","🍓","🚗"],["🐶","🐱","🐭","🍕"]];
