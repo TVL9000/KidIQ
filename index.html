@@ -6,33 +6,62 @@
 <title>IQ Trainer</title>
 
 <style>
-body { margin:0; font-family:-apple-system,system-ui; background:#0b1220; color:#eaf2ff }
+body {
+  margin:0;
+  font-family:-apple-system,system-ui;
+  background:#0b1220;
+  color:#eaf2ff;
+}
 .wrap { padding:16px; display:grid; gap:12px }
-.card { background:rgba(255,255,255,.08); border-radius:16px; padding:14px }
+.card {
+  background:rgba(255,255,255,.08);
+  border-radius:16px;
+  padding:14px;
+}
 .row { display:flex; gap:8px; flex-wrap:wrap }
-.pill { background:rgba(255,255,255,.15); padding:6px 10px; border-radius:999px; font-size:12px }
-button { width:100%; padding:12px; border-radius:14px; border:0; font-weight:700 }
+.pill {
+  background:rgba(255,255,255,.15);
+  padding:6px 10px;
+  border-radius:999px;
+  font-size:12px;
+}
+button {
+  width:100%;
+  padding:12px;
+  border-radius:14px;
+  border:0;
+  font-weight:700;
+}
 .primary { background:#4aa3ff; color:#06101f }
 .secondary { background:rgba(255,255,255,.15); color:#fff }
 .hidden { display:none }
 .grid2 { display:grid; grid-template-columns:repeat(2,1fr); gap:8px }
 .grid3 { display:grid; grid-template-columns:repeat(3,1fr); gap:8px }
-.barOuter { height:8px; background:rgba(255,255,255,.15); border-radius:999px }
-.barInner { height:100%; background:#78ff9c }
 .big { font-size:32px; text-align:center; font-weight:900 }
-.msg { font-weight:700; text-align:center }
 .center { text-align:center }
+.barOuter {
+  height:8px;
+  background:rgba(255,255,255,.15);
+  border-radius:999px;
+}
+.barInner {
+  height:100%;
+  background:#78ff9c;
+  border-radius:999px;
+}
 </style>
 </head>
 
 <body>
 <div class="wrap">
 
+<!-- HOME -->
 <div class="card" id="homeCard">
   <h2>🧠 IQ Trainer</h2>
   <button class="primary" id="startBtn">Start Session</button>
 </div>
 
+<!-- GAME -->
 <div class="card hidden" id="gameCard">
   <div class="row">
     <div class="pill" id="gameName"></div>
@@ -43,225 +72,264 @@ button { width:100%; padding:12px; border-radius:14px; border:0; font-weight:700
   <div id="gameArea"></div>
 </div>
 
+<!-- SUMMARY -->
 <div class="wrap hidden" id="summaryView"></div>
 
 </div>
 
 <script>
-/* STORAGE */
-const store={get:(k,d)=>JSON.parse(localStorage.getItem(k))??d,set:(k,v)=>localStorage.setItem(k,JSON.stringify(v))};
-const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
-const getDiff=g=>store.get("diff_"+g,1);
-const setDiff=(g,l)=>store.set("diff_"+g,l);
+/* ---------------- STORAGE ---------------- */
+const store = {
+  get:(k,d)=>JSON.parse(localStorage.getItem(k)) ?? d,
+  set:(k,v)=>localStorage.setItem(k,JSON.stringify(v))
+};
+const clamp = (v,a,b)=>Math.max(a,Math.min(b,v));
+const getDiff = g => store.get("diff_"+g,1);
+const setDiff = (g,l) => store.set("diff_"+g,l);
 
-/* GAME META */
-const games=["pattern","math","memory","color","odd","speed"];
-const meta={
-pattern:{icon:"🧩",name:"Pattern Match"},
-math:{icon:"🔢",name:"Quick Math"},
-memory:{icon:"🧠",name:"Memory Flash"},
-color:{icon:"🟦",name:"Color Grid"},
-odd:{icon:"❓",name:"Odd One Out"},
-speed:{icon:"⚡",name:"Speed Tap"}
+/* ---------------- GAME META ---------------- */
+const games = ["pattern","math","memory","color","odd","speed"];
+const meta = {
+  pattern:{icon:"🧩",name:"Pattern Match"},
+  math:{icon:"🔢",name:"Quick Math"},
+  memory:{icon:"🧠",name:"Memory Flash"},
+  color:{icon:"🟦",name:"Color Grid Memory"},
+  odd:{icon:"❓",name:"Odd One Out"},
+  speed:{icon:"⚡",name:"Speed Tap"}
 };
 
-/* SESSION ENGINE */
-const Engine={
-cycle:1,cycles:3,gi:0,ri:0,rounds:[],results:{},
-start(){
-this.cycle=1;this.gi=0;this.ri=0;this.rounds=[];this.results={};
-games.forEach(g=>this.results[g]={start:getDiff(g),scores:[],end:getDiff(g)});
-homeCard.classList.add("hidden");gameCard.classList.remove("hidden");
-this.startRound();
-},
-startRound(){
-const g=games[this.gi];
-gameName.textContent=meta[g].icon+" "+meta[g].name;
-roundPill.textContent=`Round ${this.ri+1}/3 • Cycle ${this.cycle}/3`;
-difficultyPill.textContent=`Level ${getDiff(g)}`;
-Game.render(g,getDiff(g));
-},
-record(score){
-this.rounds.push(score);this.ri++;
-this.ri===3?this.finishBlock():this.startRound();
-},
-finishBlock(){
-const g=games[this.gi];
-const avg=this.rounds.reduce((a,b)=>a+b,0)/3;
-this.results[g].scores.push(Math.round(avg));
-let l=getDiff(g);
-if(avg>=80)l++;else if(avg<=40)l--;
-l=clamp(l,1,4);setDiff(g,l);this.results[g].end=l;
-this.rounds=[];this.ri=0;this.gi++;
-this.gi===games.length?this.finishCycle():this.startRound();
-},
-finishCycle(){
-this.gi=0;
-this.cycle<this.cycles?(this.cycle++,this.startRound()):this.finishSession();
-},
-finishSession(){
-gameCard.classList.add("hidden");renderSummary(this.results);
-}
-};
+/* ---------------- SESSION ENGINE ---------------- */
+const Engine = {
+  cycles:3,
+  cycle:1,
+  gi:0,
+  ri:0,
+  block:[],
+  results:{},
+  difficulty:{},
 
-/* GAME ROUTER */
-const Game={render(t,l){
-({pattern,math,memory,color,odd,speed}[t])(l);
-}};
+  start(){
+    this.cycle=1; this.gi=0; this.ri=0; this.block=[];
+    this.results={}; this.difficulty={};
 
-/* GAME IMPLEMENTATIONS */
+    games.forEach(g=>{
+      const d = getDiff(g);
+      this.difficulty[g] = d;
+      this.results[g] = { start:d, scores:[], end:d };
+    });
 
-/* Pattern Match */
+    homeCard.classList.add("hidden");
+    summaryView.classList.add("hidden");
+    gameCard.classList.remove("hidden");
+    this.startRound();
+  },
 
-function pattern(level){
-  const shapes = ["▲","■","●","◆","★"];
-  const gridSize = level >= 3 ? 3 : 2;
-  const total = gridSize * gridSize;
+  startRound(){
+    const g = games[this.gi];
+    gameName.textContent = meta[g].icon+" "+meta[g].name;
+    roundPill.textContent = `Round ${this.ri+1}/3 • Cycle ${this.cycle}/3`;
+    difficultyPill.textContent = `Level ${this.difficulty[g]}`;
+    Game.render(g,this.difficulty[g]);
+  },
 
-  // Pick two alternating shapes
-  const s1 = shapes[Math.floor(Math.random()*shapes.length)];
-  let s2 = shapes[Math.floor(Math.random()*shapes.length)];
-  while(s2 === s1) s2 = shapes[Math.floor(Math.random()*shapes.length)];
+  record(score){
+    this.block.push(score);
+    this.ri++;
+    this.ri===3 ? this.finishBlock() : this.startRound();
+  },
 
-  // Build pattern (alternating)
-  const pattern = [];
-  for(let i=0;i<total;i++){
-    pattern.push(i % 2 === 0 ? s1 : s2);
+  finishBlock(){
+    const g = games[this.gi];
+    const avg = this.block.reduce((a,b)=>a+b,0)/3;
+    this.results[g].scores.push(Math.round(avg));
+
+    let d = this.difficulty[g];
+    if(avg>=80) d++;
+    else if(avg<=40) d--;
+    d = clamp(d,1,4);
+
+    this.difficulty[g] = d;
+    setDiff(g,d);
+    this.results[g].end = d;
+
+    this.block=[]; this.ri=0; this.gi++;
+    this.gi===games.length ? this.finishCycle() : this.startRound();
+  },
+
+  finishCycle(){
+    this.gi=0;
+    this.cycle<this.cycles ? (this.cycle++,this.startRound()) : this.finishSession();
+  },
+
+  finishSession(){
+    gameCard.classList.add("hidden");
+    renderSummary(this.results);
   }
+};
 
-  // Hide last cell
-  const answer = pattern[total-1];
-  pattern[total-1] = "❓";
+/* ---------------- GAME ROUTER ---------------- */
+const Game = {
+  render(type,level){
+    ({
+      pattern, math, memory, color, odd, speed
+    })[type](level);
+  }
+};
 
-  // Create choices
-  const choices = [answer];
-  while(choices.length < 4){
-    const s = shapes[Math.floor(Math.random()*shapes.length)];
+/* ---------------- GAMES ---------------- */
+
+/* Pattern Match – starts at 4 items */
+function pattern(level){
+  const shapes=["▲","■","●","◆","★"];
+  const size = level>=3 ? 3 : 2;
+  const total=size*size;
+  const a=shapes[Math.floor(Math.random()*shapes.length)];
+  let b=shapes[Math.floor(Math.random()*shapes.length)];
+  while(b===a) b=shapes[Math.floor(Math.random()*shapes.length)];
+
+  let grid=[];
+  for(let i=0;i<total;i++) grid.push(i%2===0?a:b);
+  const answer=grid[total-1];
+  grid[total-1]="❓";
+
+  const choices=[answer];
+  while(choices.length<4){
+    const s=shapes[Math.floor(Math.random()*shapes.length)];
     if(!choices.includes(s)) choices.push(s);
   }
   choices.sort(()=>Math.random()-.5);
 
-  gameArea.innerHTML = `
-    <div class="grid${gridSize}">
-      ${pattern.map(p=>`<div class="card center big">${p}</div>`).join("")}
+  gameArea.innerHTML=`
+    <div class="grid${size}">
+      ${grid.map(x=>`<div class="card center big">${x}</div>`).join("")}
     </div>
     <div style="height:12px"></div>
     <div class="grid2">
       ${choices.map(c=>`<button class="secondary big">${c}</button>`).join("")}
     </div>
   `;
-
   [...gameArea.querySelectorAll("button")].forEach(b=>{
-    b.onclick = ()=>Engine.record(b.textContent === answer ? 100 : 0);
+    b.onclick=()=>Engine.record(b.textContent===answer?100:0);
   });
 }
 
 /* Quick Math */
-function math(l){
-const a=Math.floor(Math.random()*20)+1,b=Math.floor(Math.random()*20)+1;
-const ans=a+b;
-const opts=[ans,ans+1,ans-1].sort(()=>Math.random()-.5);
-gameArea.innerHTML=`<div class="big">${a}+${b}</div><div class="grid3">${opts.map(o=>`<button class="secondary">${o}</button>`).join("")}</div>`;
-[...gameArea.querySelectorAll("button")].forEach(b=>b.onclick=()=>Engine.record(+b.textContent===ans?100:0));
+function math(){
+  const a=Math.floor(Math.random()*20)+5;
+  const b=Math.floor(Math.random()*20)+5;
+  const ans=a+b;
+  const opts=[ans,ans+1,ans-1].sort(()=>Math.random()-.5);
+  gameArea.innerHTML=`
+    <div class="big">${a}+${b}</div>
+    <div class="grid3">
+      ${opts.map(o=>`<button class="secondary">${o}</button>`).join("")}
+    </div>
+  `;
+  [...gameArea.querySelectorAll("button")].forEach(b=>{
+    b.onclick=()=>Engine.record(+b.textContent===ans?100:0);
+  });
 }
 
 /* Memory Flash */
-function memory(l){
-const emojis=["🐶","🐱","🦊","🐼","🦁"];
-const len=1+l;
-const seq=[...Array(len)].map(()=>emojis[Math.floor(Math.random()*emojis.length)]);
-gameArea.innerHTML=`<div class="big">${seq.join(" ")}</div><button class="primary">Ready</button>`;
-gameArea.querySelector("button").onclick=()=>{
-const ans=seq[Math.floor(Math.random()*seq.length)];
-const opts=[ans,...emojis.filter(e=>e!==ans)].slice(0,4).sort(()=>Math.random()-.5);
-gameArea.innerHTML=`<div class="msg">Which was shown?</div><div class="grid2">${opts.map(o=>`<button class="secondary">${o}</button>`).join("")}</div>`;
-[...gameArea.querySelectorAll("button")].forEach(b=>b.onclick=()=>Engine.record(b.textContent===ans?100:0));
-};
+function memory(level){
+  const emojis=["🐶","🐱","🦊","🐼","🦁","🐸"];
+  const len=level+1;
+  const seq=[...Array(len)].map(()=>emojis[Math.floor(Math.random()*emojis.length)]);
+  gameArea.innerHTML=`<div class="big">${seq.join(" ")}</div><button class="primary">Ready</button>`;
+  gameArea.querySelector("button").onclick=()=>{
+    const ans=seq[Math.floor(Math.random()*seq.length)];
+    const opts=[ans,...emojis.filter(e=>e!==ans)].slice(0,4).sort(()=>Math.random()-.5);
+    gameArea.innerHTML=`<div class="grid2">${opts.map(o=>`<button class="secondary big">${o}</button>`).join("")}</div>`;
+    [...gameArea.querySelectorAll("button")].forEach(b=>{
+      b.onclick=()=>Engine.record(b.textContent===ans?100:0);
+    });
+  };
 }
 
-/* Color Grid */
-
+/* Color Grid – FIXED RANDOMNESS */
 function color(level){
-  const size = level + 2;       // 3×3 at level 1
-  const tiles = level + 2;
-  const total = size * size;
+  const size=level+2;
+  const tiles=level+2;
+  const total=size*size;
+  const positions=[...Array(total).keys()];
+  const shuffled=[...positions].sort(()=>Math.random()-.5);
+  const targets=shuffled.slice(0,tiles);
 
-  // Fixed grid positions
-  const positions = [...Array(total).keys()];
-
-  // Randomly choose target positions
-  const shuffled = [...positions].sort(()=>Math.random() - 0.5);
-  const targets = shuffled.slice(0, tiles);
-
-  // Show grid
-  gameArea.innerHTML = `
+  gameArea.innerHTML=`
     <div class="grid${size}">
       ${positions.map(i=>`
-        <div class="card center"
-             style="height:42px;
-             background:${targets.includes(i) ? "#4aa3ff" : "rgba(255,255,255,.1)"}">
-        </div>`).join("")}
+        <div class="card" style="height:40px;background:${targets.includes(i)?"#4aa3ff":"rgba(255,255,255,.1)"}"></div>
+      `).join("")}
     </div>
   `;
 
-  // Hide after delay
   setTimeout(()=>{
-    let chosen = [];
-
-    gameArea.innerHTML = `
+    let chosen=[];
+    gameArea.innerHTML=`
       <div class="grid${size}">
-        ${positions.map(i=>`
-          <button class="secondary" style="height:42px"></button>
-        `).join("")}
+        ${positions.map(i=>`<button class="secondary" style="height:40px"></button>`).join("")}
       </div>
     `;
-
     [...gameArea.querySelectorAll("button")].forEach((b,i)=>{
-      b.onclick = ()=>{
+      b.onclick=()=>{
         if(chosen.includes(i)) return;
         chosen.push(i);
         b.style.background="#4aa3ff";
-
-        if(chosen.length === tiles){
-          const correct =
-            chosen.every(x=>targets.includes(x)) &&
-            targets.every(x=>chosen.includes(x));
-          Engine.record(correct ? 100 : 0);
+        if(chosen.length===tiles){
+          const ok=chosen.every(x=>targets.includes(x))&&targets.every(x=>chosen.includes(x));
+          Engine.record(ok?100:0);
         }
       };
     });
-
-  }, 1200);
+  },1200);
 }
-  
+
 /* Odd One Out */
-function odd(l){
-const sets=[["🍎","🍌","🍓","🚗"],["🐶","🐱","🐭","🍕"]];
-const pack=sets[Math.floor(Math.random()*sets.length)];
-const odd=pack.find(e=>!/[🍎🍌🍓🐶🐱🐭]/.test(e));
-gameArea.innerHTML=`<div class="grid2">${pack.sort(()=>Math.random()-.5).map(o=>`<button class="secondary">${o}</button>`).join("")}</div>`;
-[...gameArea.querySelectorAll("button")].forEach(b=>b.onclick=()=>Engine.record(b.textContent===odd?100:0));
+function odd(){
+  const packs=[
+    ["🍎","🍌","🍓","🚗"],
+    ["🐶","🐱","🐭","🍕"],
+    ["⚽","🏀","🎾","🧁"]
+  ];
+  const pack=packs[Math.floor(Math.random()*packs.length)];
+  const odd=pack.find(x=>!["🍎","🍌","🍓","🐶","🐱","🐭","⚽","🏀","🎾"].includes(x));
+  gameArea.innerHTML=`<div class="grid2">${pack.sort(()=>Math.random()-.5).map(o=>`<button class="secondary big">${o}</button>`).join("")}</div>`;
+  [...gameArea.querySelectorAll("button")].forEach(b=>{
+    b.onclick=()=>Engine.record(b.textContent===odd?100:0);
+  });
 }
 
 /* Speed Tap */
-function speed(l){
-const syms=["🟥","🟦","🟩","🟨"];
-const t=syms[Math.floor(Math.random()*syms.length)];
-gameArea.innerHTML=`<div class="msg">Tap ${t}</div><div class="grid2">${syms.sort(()=>Math.random()-.5).map(o=>`<button class="secondary">${o}</button>`).join("")}</div>`;
-[...gameArea.querySelectorAll("button")].forEach(b=>b.onclick=()=>Engine.record(b.textContent===t?100:0));
+function speed(){
+  const syms=["🟥","🟦","🟩","🟨"];
+  const t=syms[Math.floor(Math.random()*syms.length)];
+  gameArea.innerHTML=`<div class="big">Tap ${t}</div><div class="grid2">${syms.sort(()=>Math.random()-.5).map(o=>`<button class="secondary big">${o}</button>`).join("")}</div>`;
+  [...gameArea.querySelectorAll("button")].forEach(b=>{
+    b.onclick=()=>Engine.record(b.textContent===t?100:0);
+  });
 }
 
-/* SUMMARY */
+/* ---------------- SUMMARY ---------------- */
 function renderSummary(r){
-const v=summaryView;v.innerHTML="";v.classList.remove("hidden");
-v.innerHTML+=`<div class="card"><h2>⭐ Session Complete</h2></div>`;
-Object.keys(r).forEach(g=>{
-v.innerHTML+=`<div class="card"><div class="row"><div class="pill">${meta[g].icon} ${meta[g].name}</div><div class="pill">${r[g].start} → ${r[g].end}</div></div><div class="grid3">${r[g].scores.map(s=>`<div class="barOuter"><div class="barInner" style="width:${s}%"></div></div>`).join("")}</div></div>`;
-});
-v.innerHTML+=`<div class="card"><button class="primary" onclick="location.reload()">New Session</button></div>`;
+  summaryView.innerHTML="";
+  summaryView.classList.remove("hidden");
+  summaryView.innerHTML+=`<div class="card"><h2>⭐ Session Complete</h2></div>`;
+  Object.keys(r).forEach(g=>{
+    summaryView.innerHTML+=`
+      <div class="card">
+        <div class="row">
+          <div class="pill">${meta[g].icon} ${meta[g].name}</div>
+          <div class="pill">${r[g].start} → ${r[g].end}</div>
+        </div>
+        <div class="grid3">
+          ${r[g].scores.map(s=>`<div class="barOuter"><div class="barInner" style="width:${s}%"></div></div>`).join("")}
+        </div>
+      </div>`;
+  });
+  summaryView.innerHTML+=`<div class="card"><button class="primary" onclick="location.reload()">New Session</button></div>`;
 }
 
-/* START */
+/* ---------------- START ---------------- */
 startBtn.onclick=()=>Engine.start();
 </script>
 </body>
